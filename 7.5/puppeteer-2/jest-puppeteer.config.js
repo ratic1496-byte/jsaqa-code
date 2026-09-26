@@ -1,10 +1,11 @@
 module.exports = {
-    launch: {
-        slowMo: 300,
-        headless: false,
-        defaultViewport: null,
-        args: ['--start-maximized'] //— используем максимальный размер окна браузера
-      },
-    
-  };
-  
+  launch: {
+    headless: false,
+    slowMo: 100,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage"
+    ]
+  }
+};

@@ -1,55 +1,56 @@
-const { clickElement, putText, getText } = require("./lib/commands.js");
-const { generateName } = require("./lib/util.js");
+const { selectDay, selectSeat, bookTickets } = require("./lib/commands.js");
 
-let page;
-
-beforeEach(async () => {
-  page = await browser.newPage();
-  await page.setDefaultNavigationTimeout(0);
-});
-
-afterEach(() => {
-  page.close();
-});
-
-describe("Netology.ru tests", () => {
+describe("Booking movie tickets tests", () => {
   beforeEach(async () => {
-    page = await browser.newPage();
-    await page.goto("https://netology.ru");
-  });
+    // 1. Притворяемся обычным браузером Windows Chrome
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    );
 
-  test("The first test'", async () => {
-    const title = await page.title();
-    console.log("Page title: " + title);
-    await clickElement(page, "header a + a");
-    const title2 = await page.title();
-    console.log("Page title: " + title2);
-    const pageList = await browser.newPage();
-    await pageList.goto("https://netology.ru/navigation");
-    await pageList.waitForSelector("h1");
-  });
+    // 2. Открываем строго через HTTPS и ждём только загрузку DOM
+    await page.goto("https://qamid.tmweb.ru/client/index.php", {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
+  }, 60000);
 
-  test("The first link text 'Медиа Нетологии'", async () => {
-    const actual = await getText(page, "header a + a");
-    expect(actual).toContain("Медиа Нетологии");
-  });
+  // 1. Успешное бронирование 1 билета (Happy Path 1)
+  test("Should successfully book 1 ticket", async () => {
+    await selectDay(page, 2);
+    await page.waitForSelector(".movie-seances__time");
+    await page.click(".movie-seances__time");
+    await selectSeat(page, 1, 3);
+    await bookTickets(page);
 
-  test("The first link leads on 'Медиа' page", async () => {
-    await clickElement(page, "header a + a");
-    const actual = await getText(page, ".logo__media");
-    await expect(actual).toContain("Медиа");
-  });
-});
+    await page.waitForSelector(".ticket__check-title");
+    const actualText = await page.$eval(".ticket__check-title", (el) => el.textContent);
+    expect(actualText).toContain("Вы выбрали билеты:");
+  }, 60000);
 
-test("Should look for a course", async () => {
-  await page.goto("https://netology.ru/navigation");
-  await putText(page, "input", "тестировщик");
-  const actual = await page.$eval("a[data-name]", (link) => link.textContent);
-  const expected = "Тестировщик ПО";
-  expect(actual).toContain(expected);
-});
+  // 2. Успешное бронирование 2 билетов (Happy Path 2)
+  test("Should successfully book 2 tickets", async () => {
+    await selectDay(page, 2);
+    await page.waitForSelector(".movie-seances__time");
+    await page.click(".movie-seances__time");
+    await selectSeat(page, 1, 4);
+    await selectSeat(page, 1, 5);
+    await bookTickets(page);
 
-test("Should show warning if login is not email", async () => {
-  await page.goto("https://netology.ru/?modal=sign_in");
-  await putText(page, 'input[type="email"]', generateName(5));
+    await page.waitForSelector(".ticket__check-title");
+    const actualText = await page.$eval(".ticket__check-title", (el) => el.textContent);
+    expect(actualText).toContain("Вы выбрали билеты:");
+  }, 60000);
+
+  // 3. Попытка забронировать уже занятое место (Sad Path)
+  test("Should not allow to book taken seat", async () => {
+    await selectDay(page, 2);
+    await page.waitForSelector(".movie-seances__time");
+    await page.click(".movie-seances__time");
+
+    await page.waitForSelector(".buying-scheme__chair_taken");
+    await page.click(".buying-scheme__chair_taken");
+
+    const isButtonDisabled = await page.$eval(".acceptin-button", (el) => el.disabled);
+    expect(isButtonDisabled).toBe(true);
+  }, 60000);
 });
