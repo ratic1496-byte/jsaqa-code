@@ -1,15 +1,18 @@
 let page;
 
+beforeEach(async () => {
+  page = await browser.newPage();
+}, 60000);
+
+afterEach(async () => {
+  await page.close();
+});
+
 // Блок 1. Тесты для страницы GitHub Team
 describe("Github page tests", () => {
   beforeEach(async () => {
-    page = await browser.newPage();
     await page.goto("https://github.com/team");
   }, 60000);
-
-  afterEach(() => {
-    page.close();
-  });
 
   test(
     "The h1 header content",
@@ -50,14 +53,6 @@ describe("Github page tests", () => {
 
 // Блок 2. Новые 3 теста для других страниц GitHub
 describe("Other GitHub pages tests", () => {
-  beforeEach(async () => {
-    page = await browser.newPage();
-  }, 60000);
-
-  afterEach(() => {
-    page.close();
-  });
-
   test(
     "Enterprise page title check",
     async () => {
